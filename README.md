@@ -1,137 +1,217 @@
-# Purdue Dining Menu & Nutrition Assistant
+# Purdue Dining Scraper
 
-A fast, smart tool for exploring Purdue University dining court menus, checking real nutrition info, and finding meals that fit your diet.
+![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=flat-square&logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) ![MCP](https://img.shields.io/badge/MCP-server-6f42c1?style=flat-square) ![Tests](https://img.shields.io/badge/tests-137_passed-2ea44f?style=flat-square)
 
-Works as a **Claude/Cursor MCP Server**, an easy-to-use **Command Line Tool (CLI)**, a **FastAPI REST Server**, or a **Python Library**.
+Purdue Dining Scraper pulls menus and nutrition data from Purdue's official dining API, then cleans up the parts that are hard to use. It can run as an MCP server for Claude or Cursor, a command-line tool, a local REST API, or a Python package.
 
----
+## Why I made this
 
-## Why this exists
+The raw dining data has a few problems that make it difficult to search or compare:
 
-If you've ever looked at raw campus dining data, you've probably noticed a few issues:
-- **Cafeteria measurements**: Serving sizes often say things like `#60 Disher`, `2OZ LADLE`, or `12 Cut` instead of practical measurements like tablespoons, cups, or slices.
-- **Accidental giant batch data**: Sometimes an item (like salad dressing) gets entered as a 5-gallon kitchen batch with 28,000 calories instead of an individual serving.
-- **Single-piece confusion**: Dishes like dumplings, potstickers, or chicken nuggets are often logged as 1 single piece, which can make them look misleadingly low in sodium or calories unless you know the piece count.
+- Serving sizes use kitchen measurements such as `#60 Disher`, `2OZ LADLE`, and `12 Cut`.
+- Some nutrition records describe an entire kitchen batch instead of one serving. This can make a dressing appear to contain tens of thousands of calories.
+- Foods such as dumplings and chicken nuggets may be listed as one piece, which makes the numbers look much lower than a normal plate.
+- Build-your-own stations do not fit neatly into the same structure as the rest of the menu.
 
-This project connects directly to Purdue's official dining API, cleans up the confusing measurements, fixes bulk data errors, and makes everything easy to search and understand—both for people and for AI assistants.
+This project normalizes those records into useful portions, flags single-piece entries, handles likely bulk-recipe mistakes, and keeps build-your-own stations intact.
 
----
 
-## What it does
+| Purdue data  | Normalized value               |
+| ------------ | ------------------------------ |
+| `#60 Disher` | `1 Tbsp (#60 Disher)`          |
+| `2OZ LADLE`  | `1/4 Cup (2 oz Ladle)`         |
+| `12 Cut`     | `1 Slice (1/12 sheet cut)`     |
+| `1 Each`     | Marked as a single-piece entry |
 
-- **Real-Time Menus & Hours**: Check what's open right now across Wiley, Earhart, Ford, Hillenbrand, and Windsor.
-- **Sensible Serving Sizes**: Automatically translates kitchen jargon:
-  - `#60 Disher` $\to$ `1 Tbsp`
-  - `2OZ LADLE` $\to$ `1/4 Cup`
-  - `12 Cut` $\to$ `1 Slice`
-- **Smart Fixes for Batch Recipes**: Catches crazy numbers (like a tub of sour cream logged with thousands of calories) and scales them down to a normal 1–2 tablespoon portion.
-- **Portion & Piece Awareness**: Clearly labels single-piece items (e.g. `1 Piece (1 Each)`) so you don't accidentally think an entire plate of food only has 40 calories.
-- **Search by Diet & Macros**: Find entrees using numbers (`min_protein=25`) or everyday words (`min_protein="high"`, `max_sodium="moderate"`, `max_net_carbs="low"`).
-- **Interactive Build-Your-Own Stations**: Tracks custom stations like the Mongolian Stir Fry, Taco Bar, Pasta Bar, and Salad Bar.
-- **Meal Builder**: Add up multiple items (e.g., 5 potstickers + side of rice + broccoli) to see total calories, protein, carbs, and sodium.
 
----
 
-## Quick Setup
+
+## What you can do with it
+
+- Check dining court menus, stations, and meal periods.
+- Search for dishes by protein, calories, sodium, net carbohydrates, fat, category, or dietary needs.
+- Look up ingredients, allergens, serving sizes, and nutrition for one item.
+- Find build-your-own stations such as stir fry, salad, deli, taco, pizza, and pasta bars.
+- Combine several items and servings into one nutrition total.
+- Export menu data as regular, simplified, or LLM-friendly JSON.
+
+The nutrition search accepts numbers or plain terms such as `protein-dense`, `moderate`, and `low`.
+
+## Quick start
 
 ```bash
 git clone https://github.com/ltmerletti/PurdueDiningScraper.git
 cd PurdueDiningScraper
 
-# Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install requirements
 pip install -r requirements.txt
 pip install -e .
 ```
 
----
+After installation, `purdue-menu` and `python main.py` run the same CLI.
 
-## How to Use It
+## Use it with Claude Desktop or Cursor
 
-### 1. With Claude Desktop or Cursor (MCP)
+The MCP server lets an AI assistant query current menus without loading the entire dining dataset into the conversation.
 
-Connect this tool directly to Claude Desktop or Cursor so your AI assistant can check today's dining courts and suggest meals for you.
+Add the following server to your MCP configuration. Replace `/absolute/path/to/PurdueDiningScraper` with the location of your clone.
 
-Add this to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "purdue-dining": {
-      "command": "python",
-      "args": ["/path/to/PurdueDiningScraper/run_mcp.py"]
+      "command": "/absolute/path/to/PurdueDiningScraper/.venv/bin/python",
+      "args": [
+        "/absolute/path/to/PurdueDiningScraper/run_mcp.py"
+      ]
     }
   }
 }
 ```
 
-#### Available AI Tools:
-| Tool | What it does |
-|---|---|
-| `get_current_date` | Get today's real-world date, day of week, and formatted date string (recommended to call first). |
-| `get_open_locations` | See which dining courts are currently open, meal times, and hours. |
-| `get_court_menu` | View the menu for a court, organized by station, with clean portion sizes. |
-| `find_dishes` | Search across all courts for dishes matching your protein, calorie, sodium, or dietary goals. |
-| `get_custom_stations` | Find today's build-your-own lines (Stir Fry, Taco Bar, Salad Bar, etc.). |
-| `get_item_nutrition` | Get detailed ingredients, allergens, macros, and vitamins for a specific dish. |
-| `assemble_meal` | Calculate total nutrition when combining multiple items and servings. |
+Restart Claude Desktop or Cursor after saving the configuration. You can then ask questions such as:
 
----
+- "Which dining courts are open for dinner?"
+- "Find a high-protein entree under 700 calories."
+- "What allergens are listed for the chicken pot pie?"
+- "Add up two servings of potstickers, rice, and broccoli."
 
-### 2. From the Command Line (CLI)
+
+
+### MCP tools
+
+
+| Tool                  | What it does                                                   |
+| --------------------- | -------------------------------------------------------------- |
+| `get_current_date`    | Returns the current date and day of the week                   |
+| `get_open_locations`  | Lists dining locations, meal periods, and hours                |
+| `get_court_menu`      | Gets a court menu organized by meal and station                |
+| `find_dishes`         | Searches across courts using nutrition and dietary filters     |
+| `get_custom_stations` | Finds build-your-own stations                                  |
+| `get_item_nutrition`  | Returns nutrition, ingredients, allergens, and portion details |
+| `assemble_meal`       | Adds several items and serving counts into one total           |
+
+
+You can also start the MCP server directly:
 
 ```bash
-# Find high-protein entrees (25g+ protein) across all dining courts today
-python main.py --find-protein 25
-
-# Search using natural terms
-python main.py --find-protein protein-dense --max-sodium moderate --category ENTREE
-
-# Scrape today's lunch and dinner at Wiley
-python main.py --location Wiley --meals Lunch Dinner
+python run_mcp.py
 ```
 
----
 
-### 3. As a Local REST API
 
-Start the web server:
+## Use the command line
+
+Search today's menus for entrees with at least 25 grams of protein:
+
+```bash
+purdue-menu --find-protein 25
+```
+
+Use plain-language nutrition filters:
+
+```bash
+purdue-menu \
+  --find-protein protein-dense \
+  --max-sodium moderate \
+  --category ENTREE
+```
+
+Search one dining court or a different date:
+
+```bash
+purdue-menu --find-protein 25 --location Wiley --date 2026-09-09
+```
+
+To fetch menus and save them as JSON, start the local API first:
+
+```bash
+python run_api.py
+purdue-menu --location Wiley --meals Lunch Dinner
+```
+
+You can skip the separate API process by using the in-process runner:
+
+```bash
+purdue-menu --use-local --location Wiley --meals Lunch Dinner
+```
+
+Useful output options include:
+
+```bash
+# Leave out ingredients and allergens
+purdue-menu --use-local --location Wiley --simple
+
+# Use shorter JSON keys to reduce LLM context size
+purdue-menu --use-local --location Wiley --for-llm
+
+# Include nutrition rankings in the output
+purdue-menu --use-local --location Wiley --statistics
+```
+
+
+
+## Run the REST API
+
 ```bash
 python run_api.py
 ```
-- API will be live at `http://localhost:8000`
-- Interactive docs & playground available at `http://localhost:8000/docs`
 
----
+The API listens on `http://localhost:8000`. FastAPI's interactive documentation is available at `http://localhost:8000/docs`.
 
-## Project Structure
+Main endpoints:
 
-```
+
+| Method   | Path                    | Purpose                     |
+| -------- | ----------------------- | --------------------------- |
+| `GET`    | `/health`               | Check server health         |
+| `POST`   | `/api/menus`            | Fetch and normalize menus   |
+| `GET`    | `/api/menus/statistics` | Return nutrition statistics |
+| `GET`    | `/api/cache/info`       | Inspect the local cache     |
+| `DELETE` | `/api/cache`            | Clear the local cache       |
+
+
+
+
+## How it works
+
+The primary data path uses Purdue's HFS menu API. Location data is cached for six hours, menu data for four hours, and item details for the life of the process. Selenium remains available as a fallback for the older scraper path.
+
+Menu items pass through three main steps:
+
+1. Fetch the court menu and item details from Purdue.
+2. Normalize serving sizes and likely bulk-recipe errors.
+3. Categorize dishes and add nutrition descriptions used by search filters.
+
+
+
+## Project layout
+
+```text
 PurdueDiningScraper/
 ├── src/purdue_menu/
-│   ├── hfs_client.py        # Connects to Purdue's dining API with built-in caching
-│   ├── normalizer.py        # Cleans up serving sizes and kitchen measurements
-│   ├── food_types.py        # Categorizes foods (entrees, sides, sauces, desserts)
-│   ├── descriptors.py       # Converts numbers to helpful tags (e.g. "protein-rich", "low-sodium")
-│   ├── models.py            # Data schemas for menus, nutrition, and stations
-│   ├── api.py               # FastAPI web server
-│   ├── cli.py               # Command line tool
-│   └── mcp/                 # FastMCP server for Claude and Cursor
-├── tests/                   # Test suite (135+ tests)
-├── run_mcp.py               # Entrypoint for MCP server
-├── run_api.py               # Entrypoint for FastAPI server
-├── main.py                  # Entrypoint for CLI
-└── requirements.txt
+│   ├── hfs_client.py      Purdue HFS API client and cache
+│   ├── normalizer.py      Serving-size and bulk-recipe cleanup
+│   ├── food_types.py      Food and station categorization
+│   ├── descriptors.py     Nutrition labels and search filters
+│   ├── models.py          Menu and nutrition models
+│   ├── api.py             FastAPI application
+│   ├── cli.py             Command-line interface
+│   └── mcp/               MCP server and tools
+├── tests/                 Test suite
+├── main.py                CLI entry point
+├── run_api.py             REST API entry point
+└── run_mcp.py             MCP entry point
 ```
 
----
 
-## Running Tests
 
-To verify that all parsers, measurement converters, and API tools are working properly:
+## Run the tests
 
 ```bash
 pytest
 ```
+
+The suite currently contains 137 tests covering the API, MCP tools, normalization rules, food categories, output helpers, and scraper behavior.
+
