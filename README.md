@@ -215,5 +215,5 @@ pytest
 
 The suite currently contains 137 tests covering the API, MCP tools, normalization rules, food categories, output helpers, and scraper behavior.
 
-GitHub Actions runs the suite with network access blocked on Python 3.11 and 3.13 for pushes and pull requests. A separate weekly workflow checks the public Purdue HFS API. Monthly Dependabot PRs update Python dependencies and GitHub Actions. See [TESTING.md](TESTING.md) for local CI commands and dependency updates.
+GitHub Actions runs the suite with network access blocked on Python 3.11 and 3.13 for pushes to main and pull requests. A separate weekly workflow checks the public Purdue HFS API. Monthly Dependabot PRs update Python dependencies and GitHub Actions. See [TESTING.md](TESTING.md) for local CI commands and dependency updates.
 

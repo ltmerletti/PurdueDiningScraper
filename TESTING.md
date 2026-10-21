@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 ## Continuous integration
 
-The `CI` workflow runs on pushes, pull requests, and manual dispatch with Python 3.11 and 3.13. It installs pinned dependencies, checks the CLI and MCP entry points, and runs all tests with TCP/network access blocked. Unix sockets remain available for the async test runtime. JUnit reports are retained for seven days. No browser installation or secrets are required.
+The `CI` workflow runs on pushes to main, pull requests, and manual dispatch with Python 3.11 and 3.13. Restricting push runs to main avoids duplicate runs for pull request branches. It installs pinned dependencies, checks the CLI and MCP entry points, and runs all tests with TCP/network access blocked. Unix sockets remain available for the async test runtime. JUnit reports are retained for seven days. No browser installation or secrets are required.
 
 To reproduce a CI run in a virtual environment:
 
