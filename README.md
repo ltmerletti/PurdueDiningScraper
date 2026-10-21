@@ -1,6 +1,6 @@
 # Purdue Dining Scraper
 
-![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=flat-square&logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) ![MCP](https://img.shields.io/badge/MCP-server-6f42c1?style=flat-square) ![Tests](https://img.shields.io/badge/tests-137_passed-2ea44f?style=flat-square)
+![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=flat-square&logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) ![MCP](https://img.shields.io/badge/MCP-server-6f42c1?style=flat-square) [![CI](https://github.com/ltmerletti/PurdueDiningScraper/actions/workflows/ci.yml/badge.svg)](https://github.com/ltmerletti/PurdueDiningScraper/actions/workflows/ci.yml)
 
 Purdue Dining Scraper pulls menus and nutrition data from Purdue's official dining API, then cleans up the parts that are hard to use. It can run as an MCP server for Claude or Cursor, a command-line tool, a local REST API, or a Python package.
 
@@ -214,4 +214,6 @@ pytest
 ```
 
 The suite currently contains 137 tests covering the API, MCP tools, normalization rules, food categories, output helpers, and scraper behavior.
+
+GitHub Actions runs the suite with network access blocked on Python 3.11 and 3.13 for pushes to main and pull requests. A separate weekly workflow checks the public Purdue HFS API. Monthly Dependabot PRs update Python dependencies and GitHub Actions. See [TESTING.md](TESTING.md) for local CI commands and dependency updates.
 

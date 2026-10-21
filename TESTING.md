@@ -9,7 +9,38 @@ This guide explains how to test the Purdue Dining Menu Helper application.
 pip install -r requirements.txt
 ```
 
-2. Ensure you have Chrome/Chromium installed (required for web scraping)
+2. Chrome/Chromium is needed only for live Selenium scraping. Automated tests mock browser access.
+
+## Continuous integration
+
+The `CI` workflow runs on pushes to main, pull requests, and manual dispatch with Python 3.11 and 3.13. Restricting push runs to main avoids duplicate runs for pull request branches. It installs pinned dependencies, checks the CLI and MCP entry points, and runs all tests with TCP/network access blocked. Unix sockets remain available for the async test runtime. JUnit reports are retained for seven days. No browser installation or secrets are required.
+
+To reproduce a CI run in a virtual environment:
+
+```bash
+python -m pip install -r requirements-ci.txt
+python -m pip install --no-deps -e .
+python -m pip check
+purdue-menu --help
+python -c "from purdue_menu.mcp.server import create_mcp_server; create_mcp_server()"
+python -m pytest --disable-socket --allow-unix-socket
+```
+
+`requirements-ci.in` includes the application requirements plus the offline-test plugin. Refresh the pinned environment with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv pip compile requirements-ci.in --python-version 3.11 --universal --upgrade --output-file requirements-ci.txt
+```
+
+Keep the MCP dependency below 2 until the server is migrated from the MCP 1.x FastMCP API. Dependabot opens grouped monthly Python and GitHub Actions update PRs; those updates must pass CI before merging.
+
+The separate `Purdue API compatibility` workflow runs Wednesdays at 14:17 UTC and can be started manually. It makes at most three public API requests: locations, one court's menu using the current Indianapolis date, and one item when available. It also exercises the existing menu parser. Closed courts and unpublished menus are valid; HTTP failures or incompatible response shapes fail this workflow. It does not run as a pull request check, so an upstream outage does not block normal CI.
+
+To run that live check locally after installation:
+
+```bash
+python scripts/check_hfs_api.py
+```
 
 ## 1. Run Automated Tests
 
